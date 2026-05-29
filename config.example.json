@@ -1,0 +1,24 @@
+{
+  "base_url": "https://canvas.instructure.com",
+  "cookies": "~/canvas-cookies.json",
+  "output_root": "./archive",
+  "skip_files": false,
+  "max_file_size_mb": 100,
+  "save_announcements": false,
+  "include_unpublished": false,
+  "zip": false,
+  "term_scheme": "korean",
+  "_notes": {
+    "_about": "This is the shape of the config the interactive prompt saves to ~/.canvas-archive/config.json and loads automatically on the next run. You normally never edit this by hand: run the tool with no arguments and answer the prompts. Anything passed on the command line overrides the saved value. There is no --config flag; this example file is documentation only. The tool reads ~/.canvas-archive/config.json, not this file.",
+    "base_url": "Root of your Canvas instance. FFT is https://canvas.instructure.com. Institutional is usually https://<school>.instructure.com.",
+    "cookies": "Path to a Cookie-Editor JSON export. ~ is expanded. Re-export when cookies expire (you will see 401s).",
+    "output_root": "Folder where each <Course Name (semester) YYYY>/ folder gets written.",
+    "skip_files": "Skip downloading the Files section entirely.",
+    "max_file_size_mb": "Skip any single file larger than this many MB.",
+    "save_announcements": "Archive course announcements.",
+    "include_unpublished": "Include unpublished assignments, pages, modules, discussions, quizzes, and files.",
+    "zip": "Also produce a .zip of each course folder.",
+    "term_scheme": "How the academic term in folder names is recognized from a course's earliest assignment due date. One of: korean (default; Spring=1 Feb-Jul, Fall=2 Aug-Dec, January counts as the prior year's Fall), us (Spring=1 Jan-May, Summer=2 Jun-Jul, Fall=3 Aug-Dec), trimester (1 Jan-Apr, 2 May-Aug, 3 Sep-Dec), summer_winter (Winter=1 Dec-Feb, Summer=2 Jun-Aug, regular=3 otherwise), or none (do not add a term marker). Folders are named '<Course Name> (<term>) <year>'.",
+    "scope": "Course scope is chosen at run time with --course-id <id> or --all (or the interactive prompt), not stored in this file."
+  }
+}

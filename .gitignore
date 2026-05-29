@@ -1,0 +1,39 @@
+# Archived course output (contains real student data: names, emails, grades,
+# photos, submissions). NEVER commit this.
+archive/
+*.zip
+
+# Credentials and local settings
+canvas-cookies.json
+*cookie*.json
+*cookies*.json
+testcookie.json
+config.json
+.canvas-archive/
+
+# Per-run logs and whole-account run state (contain course ids / names)
+_error.log
+**/_error.log
+_manifest.json
+_courses.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local paste diagnostic (may capture live cookies)
+debug_paste.py
+paste*.bin
+paste*.txt
