@@ -2051,7 +2051,7 @@ def fetch_classic_quiz_submissions(
         want_attempt = qsub_attempt_by_user.get(uid)
         chosen = None
         for h in history:
-            if h.get("submission_data") is None:
+            if not h or h.get("submission_data") is None:
                 continue
             if want_attempt is not None and h.get("attempt") == want_attempt:
                 chosen = h
@@ -3513,8 +3513,21 @@ def archive_one(args, api: Canvas, cid: int) -> int:
         def _do_quiz(q: dict) -> dict | None:
             q_published = is_published(q)
             try:
-                questions = api.get_paginated(
-                    f"{api.base}/api/v1/courses/{cid}/quizzes/{q['id']}/questions?per_page=100")
+                try:
+                    questions = api.get_paginated(
+                        f"{api.base}/api/v1/courses/{cid}/quizzes/{q['id']}/questions?per_page=100")
+                except urllib.error.HTTPError as qex:
+                    # Canvas forbids the questions endpoint for some quizzes
+                    # (graded surveys, access-code-locked, or restricted banks).
+                    # Don't drop the whole quiz: archive its page and student
+                    # scores with an empty question bank instead.
+                    if qex.code in (401, 403, 404):
+                        logger.warning("  [quiz %s questions unavailable: HTTP %s] "
+                                       "archiving without question bank",
+                                       q.get("id"), qex.code)
+                        questions = []
+                    else:
+                        raise
                 stem = safe_name(q.get("title") or f"quiz_{q.get('id')}")
                 fname = stem + ".html"
                 # Mirror the assignment layout: each quiz is its own folder, with
