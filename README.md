@@ -4,7 +4,7 @@
 
 Bail out of your Canvas account before it disappears.
 
-Instructure is shutting down **Canvas Free For Teachers on May 29, 2026**. If you taught on a FFT account, every gradebook, discussion thread, assignment submission, file upload, page, and quiz you built lives behind that login until the lights go out. This tool gets it out as a human-readable, machine-parseable archive on your disk before that happens.
+Instructure is shutting down **Canvas Free For Teachers on May 29, 2026 1pm ET**. If you taught on a FFT account, every gradebook, discussion thread, assignment submission, file upload, page, and quiz you built lives behind that login until the lights go out. This tool gets it out as a human-readable, machine-parseable archive on your disk before that happens.
 
 It also works against any other Canvas instance (paid institutional, self-hosted, beta, whatever) as long as you can log into it in a browser.
 
