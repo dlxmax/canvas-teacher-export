@@ -180,7 +180,23 @@ That is all most people need. The interactive prompt walks you through everythin
 
 Roughly **one minute per course**, give or take, depending on how many files, submissions, and students it has. A few courses is a coffee break. A full account of 80+ courses runs over an hour, which is exactly why [`--all`](#archiving-many-courses-resumable) below is resumable: start it, walk away, and if it stops (laptop sleeps, cookie expires, network drops) just run it again and it picks up where it left off.
 
-#### Running with flags instead of prompts
+## What it does *not* do
+
+- It does not upload to a new LMS for you. This is an archive tool, not a migrator. If you want to land somewhere else, the JSON islands inside each HTML are designed to make that import script straightforward to write.
+- It does not download conference (BigBlueButton) recordings. Those are typically not retrievable through the API; the conference metadata is captured, the recordings are not.
+- It does not modify anything on Canvas. Read-only end to end.
+
+## Untested and best-effort features
+
+This tool was built and verified against a real Free For Teachers course that used classic quizzes, a single Files tree, sections, rubrics, discussions, pages, and modules. Those paths are exercised on every run and are solid.
+
+The following features are implemented but have **not** been verified against real course data, because the test course did not contain them. They are written defensively (they skip cleanly when the data is absent and isolate any error to their own section), but treat their output as best-effort until you confirm it against your own course:
+
+- **New Quizzes (Quizzes.Next).** Detected as LTI assignments. The tool attempts to pull per-question content from the New Quizzes API and falls back to a shell page (linking the assignment view and gradebook score) when that API is not reachable with session cookies, which is the common case. Student scores are always captured via the normal gradebook path.
+- **Per-student quiz results.** Always archived: each quiz page gets a per-student score table grouped by section (the same way the assignment roster is split), and a `_grades.csv` records each student's section and per-question answer, whether it was correct, and points earned. Verified for classic quizzes (multiple-choice, true/false, and similar option-based questions). Other classic question types (numerical, formula, matching, file-upload) are captured generically and the recorded answer text may be less precise.
+- **Group sets / group membership, Conferences, Collaborations, Outcomes, and custom Grading schemes.** Each is written as a metadata page only when the course actually has that data. The page layouts have not been seen against real data and may need adjustment.
+
+## Running with flags instead of prompts
 
 Once you know what you want, you can skip the prompts. Substitute `python` on Windows for `python3` below.
 
@@ -253,35 +269,6 @@ python3 canvas_archive.py --rebuild-index --output-root ./archive
 ```
 
 This is pure post-processing (no network, no cookies). It also writes a machine-readable `_courses.csv` next to the index.
-
-## What it does *not* do
-
-- It does not upload to a new LMS for you. This is an archive tool, not a migrator. If you want to land somewhere else, the JSON islands inside each HTML are designed to make that import script straightforward to write.
-- It does not download conference (BigBlueButton) recordings. Those are typically not retrievable through the API; the conference metadata is captured, the recordings are not.
-- It does not modify anything on Canvas. Read-only end to end.
-
-## Untested and best-effort features
-
-This tool was built and verified against a real Free For Teachers course that used classic quizzes, a single Files tree, sections, rubrics, discussions, pages, and modules. Those paths are exercised on every run and are solid.
-
-The following features are implemented but have **not** been verified against real course data, because the test course did not contain them. They are written defensively (they skip cleanly when the data is absent and isolate any error to their own section), but treat their output as best-effort until you confirm it against your own course:
-
-- **New Quizzes (Quizzes.Next).** Detected as LTI assignments. The tool attempts to pull per-question content from the New Quizzes API and falls back to a shell page (linking the assignment view and gradebook score) when that API is not reachable with session cookies, which is the common case. Student scores are always captured via the normal gradebook path.
-- **Per-student quiz results.** Always archived: each quiz page gets a per-student score table grouped by section (the same way the assignment roster is split), and a `_grades.csv` records each student's section and per-question answer, whether it was correct, and points earned. Verified for classic quizzes (multiple-choice, true/false, and similar option-based questions). Other classic question types (numerical, formula, matching, file-upload) are captured generically and the recorded answer text may be less precise.
-- **Group sets / group membership, Conferences, Collaborations, Outcomes, and custom Grading schemes.** Each is written as a metadata page only when the course actually has that data. The page layouts have not been seen against real data and may need adjustment.
-
-If you hit a course that uses any of these and the output looks wrong, that is expected at this stage. Please open an issue with a description (no student data needed) so the rendering can be fixed.
-
-## Publishing (maintainer note)
-
-To create the public repo and apply all discoverability topics in one shot (run from the project folder, with the [GitHub CLI](https://cli.github.com/) installed and authenticated). Replace `OWNER/canvas-archive-py` with your actual repo path:
-
-```bash
-gh repo create OWNER/canvas-archive-py --public --source=. --remote=origin --push \
-  && gh repo edit OWNER/canvas-archive-py --add-topic canvas-lms,canvas,instructure,canvas-free-for-teachers,fft,course-export,course-archive,lms-export,lms-migration,data-export,gradebook,backup,edtech,teacher-tools,education,web-scraping,python,stdlib,cli
-```
-
-If the repo already exists, skip the create step and just run the `gh repo edit ... --add-topic` half. GitHub caps a repo at 20 topics; the list above is 19.
 
 ## License
 
