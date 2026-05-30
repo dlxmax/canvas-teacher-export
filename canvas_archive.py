@@ -4188,13 +4188,18 @@ def interactive_setup(args, api) -> bool:
             if not cids:
                 return False
             if len(cids) == 1:
-                # Single course: the lightweight in-process path.
+                # Single course: the lightweight in-process path, which always
+                # archives the course the user picked.
                 args.course_id = cids[0]
             else:
                 # Several courses: reuse the resumable whole-account driver but
-                # restrict it to the chosen ids via the same --only filter.
+                # restrict it to the chosen ids via the same --only filter. Force
+                # is implied: an explicit pick means "archive these now", so we
+                # match the single-course path instead of silently skipping ones
+                # already marked done in the manifest from an earlier run.
                 args.all = True
                 args.only = ",".join(str(c) for c in cids)
+                args.force = True
             break
         if choice in {"q", "quit"}:
             return False

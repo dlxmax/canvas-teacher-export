@@ -418,6 +418,7 @@ class TestInteractiveSetupSavedConfig:
         a.all = False
         a.course_id = None
         a.only = ""
+        a.force = False
         a.output_root = ac.Path("/tmp/keepme")
         a.zip = False
         a.save_announcements = True
@@ -492,14 +493,17 @@ class TestInteractiveSetupSavedConfig:
         assert a.course_id == 7195381
         assert a.all is False
         assert a.only == ""
+        assert a.force is False
         assert "Ready: course 7195381" in capsys.readouterr().out
 
     def test_multi_course_pick_routes_through_only_filter(self, monkeypatch, capsys):
         monkeypatch.setattr(
             ac, "_pick_course_interactive", lambda api: [7195381, 7195384, 7195390])
         a, prompts, saves = self._drive(monkeypatch, {}, ["2"] + [""] * 12)
-        # Several courses reuse the resumable driver, scoped by --only.
+        # Several courses reuse the resumable driver, scoped by --only, and force
+        # is implied so an explicit pick is never silently skipped as "done".
         assert a.all is True
         assert a.course_id is None
         assert a.only == "7195381,7195384,7195390"
+        assert a.force is True
         assert "Ready: 3 selected courses" in capsys.readouterr().out
