@@ -64,6 +64,13 @@ class TestSafeName:
         out = ac.safe_name("abcdefghi " + "j" * 50, max_len=10)
         assert not out.endswith(" ")
 
+    def test_colon_section_name_is_windows_safe(self):
+        # Section names like "JRW R12: A01307202" crashed mkdir on Windows
+        # (WinError 267); the colon must be neutralised for the folder.
+        out = ac.safe_name("JRW R12: A01307202")
+        assert out == "JRW R12- A01307202"
+        assert ":" not in out
+
 
 # ---------------------------------------------------------------------------
 # _module_item_local_href  (module + inline links must target a real file,

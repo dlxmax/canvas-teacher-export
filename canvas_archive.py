@@ -1954,7 +1954,14 @@ def build_section_index(sections: list[dict], course_name: str) -> tuple[dict[st
     section_short: dict[str, str] = {}
     for s in sections:
         sname = s.get("name") or f"section_{s.get('id')}"
-        short = derive_section_short(sname, course_name)
+        # safe_name() here is load-bearing, not cosmetic: this short label is
+        # used directly as a directory component (assignments/<asgmt>/<section>)
+        # and in the matching hrefs. Section names routinely contain a colon
+        # (e.g. "JRW R12: A01307202"), which is legal on POSIX but a reserved
+        # character on Windows, where the bare name makes mkdir raise
+        # NotADirectoryError [WinError 267]. Sanitizing once at the source keeps
+        # the folder name, the quoted href, and the display label in agreement.
+        short = safe_name(derive_section_short(sname, course_name))
         section_short[str(s.get("id"))] = short
         for st in s.get("students") or []:
             user_to_section[str(st["id"])] = short
