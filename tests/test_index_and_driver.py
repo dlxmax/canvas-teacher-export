@@ -417,6 +417,7 @@ class TestInteractiveSetupSavedConfig:
         a = type("A", (), {})()
         a.all = False
         a.course_id = None
+        a.only = ""
         a.output_root = ac.Path("/tmp/keepme")
         a.zip = False
         a.save_announcements = True
@@ -484,3 +485,21 @@ class TestInteractiveSetupSavedConfig:
         # First run prints the settings only in the Ready summary (no saved-header).
         out = capsys.readouterr().out
         assert out.count("term-scheme=korean") == 1
+
+    def test_single_course_pick_sets_course_id(self, monkeypatch, capsys):
+        monkeypatch.setattr(ac, "_pick_course_interactive", lambda api: [7195381])
+        a, prompts, saves = self._drive(monkeypatch, {}, ["2"] + [""] * 12)
+        assert a.course_id == 7195381
+        assert a.all is False
+        assert a.only == ""
+        assert "Ready: course 7195381" in capsys.readouterr().out
+
+    def test_multi_course_pick_routes_through_only_filter(self, monkeypatch, capsys):
+        monkeypatch.setattr(
+            ac, "_pick_course_interactive", lambda api: [7195381, 7195384, 7195390])
+        a, prompts, saves = self._drive(monkeypatch, {}, ["2"] + [""] * 12)
+        # Several courses reuse the resumable driver, scoped by --only.
+        assert a.all is True
+        assert a.course_id is None
+        assert a.only == "7195381,7195384,7195390"
+        assert "Ready: 3 selected courses" in capsys.readouterr().out

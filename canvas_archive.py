@@ -3791,7 +3791,42 @@ def list_all_course_ids(api: "Canvas") -> list[tuple[int, str]]:
     return sorted(seen.items())
 
 
-def _pick_course_interactive(api) -> int | None:
+def parse_index_selection(text: str, count: int) -> list[int] | None:
+    """Parse a menu selection like "1-5, 6, 8" over a 1..count list into a
+    sorted, de-duplicated list of 1-based indices.
+
+    Separators may be commas and/or whitespace; "A-B" is an inclusive range
+    (either order). Returns None when the text is empty or contains any token
+    that is not a plain number or a valid range, or that references an index
+    outside 1..count, so the caller can re-prompt instead of guessing.
+    """
+    if not text or not text.strip():
+        return None
+    picked: set[int] = set()
+    for token in re.split(r"[,\s]+", text.strip()):
+        if not token:
+            continue
+        m = re.fullmatch(r"(\d+)-(\d+)", token)
+        if m:
+            lo, hi = int(m.group(1)), int(m.group(2))
+            if lo > hi:
+                lo, hi = hi, lo
+            if lo < 1 or hi > count:
+                return None
+            picked.update(range(lo, hi + 1))
+        elif token.isdigit():
+            idx = int(token)
+            if not 1 <= idx <= count:
+                return None
+            picked.add(idx)
+        else:
+            return None
+    return sorted(picked) or None
+
+
+def _pick_course_interactive(api) -> list[int] | None:
+    """Show the course list and return the selected course ids (one, several,
+    or all), or None if the user quits."""
     print("\nLoading course list...")
     courses = list_all_course_ids(api)
     if not courses:
@@ -3802,14 +3837,16 @@ def _pick_course_interactive(api) -> int | None:
         print(f"  [{i:>3}]  {cid:>10}  {name}")
     print()
     while True:
-        choice = input("Enter a number (or 'q' to quit): ").strip().lower()
+        choice = input("Enter numbers (e.g. 1-5, 6, 8), 'all', or 'q' to quit: ").strip().lower()
         if choice in {"q", "quit", ""}:
             return None
-        if choice.isdigit():
-            idx = int(choice)
-            if 1 <= idx <= len(courses):
-                return courses[idx - 1][0]
-        print("  Please enter a number from the list, or 'q'.")
+        if choice in {"all", "*"}:
+            return [cid for cid, _ in courses]
+        picked = parse_index_selection(choice, len(courses))
+        if picked:
+            return [courses[i - 1][0] for i in picked]
+        print(f"  Please enter numbers from 1 to {len(courses)} "
+              f"(e.g. 1-5, 6, 8), 'all', or 'q'.")
 
 
 def interactive_banner() -> None:
@@ -4139,7 +4176,7 @@ def interactive_setup(args, api) -> bool:
     print()
     print("[Step 2/3] What do you want to archive?")
     print("  1) Every course your account can see")
-    print("  2) One specific course (pick from a list)")
+    print("  2) Specific courses (pick one, several, or a range from a list)")
     print("  q) Quit")
     while True:
         choice = input("> ").strip().lower()
@@ -4147,10 +4184,17 @@ def interactive_setup(args, api) -> bool:
             args.all = True
             break
         if choice in {"2", "o", "one"}:
-            cid = _pick_course_interactive(api)
-            if cid is None:
+            cids = _pick_course_interactive(api)
+            if not cids:
                 return False
-            args.course_id = cid
+            if len(cids) == 1:
+                # Single course: the lightweight in-process path.
+                args.course_id = cids[0]
+            else:
+                # Several courses: reuse the resumable whole-account driver but
+                # restrict it to the chosen ids via the same --only filter.
+                args.all = True
+                args.only = ",".join(str(c) for c in cids)
             break
         if choice in {"q", "quit"}:
             return False
@@ -4240,7 +4284,13 @@ def interactive_setup(args, api) -> bool:
 
     print()
     print("=" * 64)
-    scope = "ALL courses your cookie can see" if args.all else f"course {args.course_id}"
+    if args.all and args.only:
+        n = len([x for x in args.only.split(",") if x.strip()])
+        scope = f"{n} selected course{'s' if n != 1 else ''}"
+    elif args.all:
+        scope = "ALL courses your cookie can see"
+    else:
+        scope = f"course {args.course_id}"
     print(f"  Ready: {scope}")
     # The settings were just shown above when kept unchanged; only re-print the
     # full block when the user actually walked through the options.

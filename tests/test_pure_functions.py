@@ -112,6 +112,50 @@ class TestFixMojibake:
 
 
 # ---------------------------------------------------------------------------
+# parse_index_selection  (interactive picker accepts "1-5, 6, 8")
+# ---------------------------------------------------------------------------
+
+
+class TestParseIndexSelection:
+    def test_single_number(self):
+        assert ac.parse_index_selection("3", 10) == [3]
+
+    def test_comma_list(self):
+        assert ac.parse_index_selection("1, 6, 8", 10) == [1, 6, 8]
+
+    def test_range(self):
+        assert ac.parse_index_selection("1-5", 10) == [1, 2, 3, 4, 5]
+
+    def test_mixed_range_and_list(self):
+        assert ac.parse_index_selection("1-5, 6, 8", 10) == [1, 2, 3, 4, 5, 6, 8]
+
+    def test_whitespace_only_separators(self):
+        assert ac.parse_index_selection("1 2   3", 10) == [1, 2, 3]
+
+    def test_no_space_after_comma(self):
+        assert ac.parse_index_selection("1-5,6,8", 10) == [1, 2, 3, 4, 5, 6, 8]
+
+    def test_dedupes_and_sorts(self):
+        assert ac.parse_index_selection("8, 1-3, 2, 8", 10) == [1, 2, 3, 8]
+
+    def test_reversed_range_is_normalised(self):
+        assert ac.parse_index_selection("5-1", 10) == [1, 2, 3, 4, 5]
+
+    def test_out_of_range_returns_none(self):
+        assert ac.parse_index_selection("11", 10) is None
+        assert ac.parse_index_selection("1-11", 10) is None
+        assert ac.parse_index_selection("0", 10) is None
+
+    def test_garbage_token_returns_none(self):
+        assert ac.parse_index_selection("1, x, 3", 10) is None
+        assert ac.parse_index_selection("abc", 10) is None
+
+    def test_empty_returns_none(self):
+        assert ac.parse_index_selection("", 10) is None
+        assert ac.parse_index_selection("   ", 10) is None
+
+
+# ---------------------------------------------------------------------------
 # _module_item_local_href  (module + inline links must target a real file,
 # never a bare folder -- regression guard for the split_mode discussion bug
 # where the link pointed at "Discussions/" and opened a directory listing)
