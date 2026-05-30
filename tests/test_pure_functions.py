@@ -73,6 +73,45 @@ class TestSafeName:
 
 
 # ---------------------------------------------------------------------------
+# fix_mojibake  (Canvas serves some non-ASCII titles double-encoded: the UTF-8
+# bytes of a leading Korean char re-read as Latin-1. The repair recovers the
+# original and must never touch a legitimate title.)
+# ---------------------------------------------------------------------------
+
+
+class TestFixMojibake:
+    # The bytes Canvas serves for a leading "끝", decoded as UTF-8 by the tool.
+    GGEUT_MOJIBAKE = bytes([0xC3, 0xAB, 0xC2, 0x81, 0xC2, 0x9D]).decode("utf-8")
+
+    def test_recovers_double_encoded_korean(self):
+        garbled = self.GGEUT_MOJIBAKE + "Journalism Reading and Writing(2) - FA23"
+        assert ac.fix_mojibake(garbled) == "끝Journalism Reading and Writing(2) - FA23"
+
+    def test_is_idempotent(self):
+        garbled = self.GGEUT_MOJIBAKE + "X"
+        once = ac.fix_mojibake(garbled)
+        assert ac.fix_mojibake(once) == once == "끝X"
+
+    def test_leaves_plain_ascii_unchanged(self):
+        assert ac.fix_mojibake("Critical Writing(2) - FA23") == "Critical Writing(2) - FA23"
+
+    def test_leaves_valid_korean_unchanged(self):
+        assert ac.fix_mojibake("끝Journalism") == "끝Journalism"
+
+    def test_leaves_accented_latin_unchanged(self):
+        # "Café" has no C1 control char, so it is not mistaken for mojibake.
+        assert ac.fix_mojibake("Café Society 101") == "Café Society 101"
+
+    def test_empty_and_none_safe(self):
+        assert ac.fix_mojibake("") == ""
+        assert ac.fix_mojibake(None) is None
+
+    def test_safe_name_recovers_then_sanitises(self):
+        garbled = self.GGEUT_MOJIBAKE + "Journalism Reading and Writing(2) - FA23"
+        assert ac.safe_name(garbled) == "끝Journalism Reading and Writing(2) - FA23"
+
+
+# ---------------------------------------------------------------------------
 # _module_item_local_href  (module + inline links must target a real file,
 # never a bare folder -- regression guard for the split_mode discussion bug
 # where the link pointed at "Discussions/" and opened a directory listing)

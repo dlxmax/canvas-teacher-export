@@ -331,9 +331,35 @@ def parse_next_link(link_header: str | None) -> str | None:
 
 _SAFE_RE = re.compile(r"[\x00-\x1F\x7F/\\?%*:|\"<>]")
 
+# C1 control range (U+0080-U+009F). These never appear in legitimate course or
+# section titles, so their presence is a reliable fingerprint of mojibake:
+# UTF-8 bytes that were decoded as Latin-1 somewhere upstream (Canvas stores
+# some non-ASCII titles this way and serves the mangled bytes verbatim).
+_C1_RE = re.compile(r"[\x80-\x9F]")
+
+
+def fix_mojibake(s: str) -> str:
+    """Best-effort repair of UTF-8-decoded-as-Latin-1 double-encoding.
+
+    A Korean title like "끝Journalism" (UTF-8 bytes EB 81 9D ...) re-read as
+    Latin-1 upstream becomes "ë\x81\x9dJournalism" (codepoints U+00EB U+0081
+    U+009D ...). Re-encoding as Latin-1 and decoding as UTF-8 reverses it.
+
+    Only attempted when a C1 control char is present (the mojibake tell), and
+    only accepted when the round trip both succeeds and removes those controls,
+    so a legitimate title is never altered.
+    """
+    if not s or not _C1_RE.search(s):
+        return s
+    try:
+        repaired = s.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return s
+    return repaired if not _C1_RE.search(repaired) else s
+
 
 def safe_name(s: str, max_len: int = 120) -> str:
-    s = (s or "").strip()
+    s = fix_mojibake((s or "").strip())
     s = _SAFE_RE.sub("-", s)
     s = re.sub(r"\s+", " ", s).strip(" .")
     if len(s) > max_len:
@@ -2780,6 +2806,11 @@ def archive_one(args, api: Canvas, cid: int) -> int:
     course_label = f"course {cid}"
     logger.info("== fetch course meta ==")
     course, _ = api.get_json(f"{api.base}/api/v1/courses/{cid}?include[]=syllabus_body&include[]=term")
+    # Repair double-encoded titles once at the source so the folder name, the
+    # error-log label, the HTML <title>, and the course_meta island all agree on
+    # the recovered text (e.g. a leading Korean "끝" Canvas serves as mojibake).
+    if course.get("name"):
+        course["name"] = fix_mojibake(course["name"])
     course_label = f"{course.get('name')} ({cid})"
     logger.info("course: %s (id=%s)", course.get("name"), course.get("id"))
 
