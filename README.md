@@ -162,7 +162,7 @@ Just export everything; Cookie-Editor's "Export as JSON" grabs the whole set and
 
 ### 3. Run it
 
-The easiest way is to run with no arguments and answer the prompts. It will ask for your Canvas URL and cookie file (you can even paste the cookie JSON directly), let you pick one course or all of them, set options, and offer to remember your settings for next time.
+The easiest way is to run with no arguments and answer the prompts. It will ask for your Canvas URL and cookie file (you can even paste the cookie JSON directly), let you pick courses (one, a selection like `1-5, 6, 8`, or all of them), set options, and offer to remember your settings for next time.
 
 **Windows 11** (PowerShell, from the folder holding the script):
 ```powershell
@@ -241,7 +241,7 @@ Python 3.10+ is enough. No `pip install`, no venv. The whole thing is the standa
 
 For a whole account (dozens of courses), `--all` runs a resumable driver: it archives **one course per subprocess**, so a single course that hangs, crashes, or runs out of memory cannot take down the rest of the run. It records progress to `<output-root>/_manifest.json`, so you can stop and rerun and it **skips courses already finished**. It retries transient failures with backoff and aborts early (assuming an expired cookie) if several courses fail in a row.
 
-You get this by choosing "every course" in the interactive prompt, or by running `canvas_archive.py --all`:
+You get this by choosing "every course" in the interactive prompt (or picking several courses there, for example `1-5, 6, 8`), or by running `canvas_archive.py --all`:
 
 ```bash
 # Archive everything, resumably, to ./archive
